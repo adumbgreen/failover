@@ -6,12 +6,12 @@ fi
 
 # Set defaults if not provided by config file
 CHECK_DELAY=${CHECK_DELAY:-5}
-CHECK_IP=${CHECK_IP:-8.8.8.8}
-CHECK_IP_BACKUP=${CHECK_IP_BACKUP:-8.8.4.4}
+CHECK_IP=${CHECK_IP:-1.1.1.1}
 PING_TIMEOUT=3
 PRIMARY_IF=${PRIMARY_IF:-enp0s25}
 PRIMARY_GW=${PRIMARY_GW:-192.168.2.1}
 BACKUP_IF=${BACKUP_IF:-enx00a0c6000000}
+BACKUP_IP=${BACKUP_IF:-192.168.1.4}
 BACKUP_GW=${BACKUP_GW:-192.168.1.1}
 
 # Compare arg with current default gateway interface for route to healthcheck IP
@@ -26,14 +26,21 @@ else
   USING_PRIMARY_IF=0
 fi
 
+if grep -q $PRIMARY_IF "/etc/iproute2/rt_tables"; then
+  echo "13 $PRIMARY_IF" >> /etc/iproute2/rt_tables
+  echo "Added $PRIMARY_IF entry to rt_tables".
+fi
+
+if grep -q $BACKUP_IF "/etc/iproute2/rt_tables"; then
+  echo "13 $BACKUP_IF" >> /etc/iproute2/rt_tables
+  echo "Added $BACKUP_IF entry to rt_tables."
+fi
+
 init_check_routes() {
   echo "Initializing routes for check IPs."
 
-  # Dedicate CHECK_IP to the PRIMARY_IF
-  ip route add "$CHECK_IP" via "$PRIMARY_GW" dev "$PRIMARY_IF" &> /dev/null
-
-  # Dedicate CHECK_IP_BACKUP to the BACKUP_IF
-  ip route add "$CHECK_IP_BACKUP" via "$BACKUP_GW" dev "$BACKUP_IF" &> /dev/null
+  ip route add default via "$BACKUP_GW" table "$BACKUP_IF"
+  ip rule add from "$BACKUP_IP" lookup "$BACKUP_IF"
 }
 
 # Cycle healthcheck continuously with specified delay
@@ -46,7 +53,7 @@ do
     if ping -W "$PING_TIMEOUT" -c 1 "$CHECK_IP" &>/dev/null # and the ping succeeds
     then
       echo "Primary link is up. Testing backup..."
-      if ping -W "$PING_TIMEOUT" -c 1 "$CHECK_IP_BACKUP"  &>/dev/null
+      if ping -W "$PING_TIMEOUT" -c 1 -I "$BACKUP_IF" "$CHECK_IP"  &>/dev/null
       then
         echo "Backup link also ok."
       else
