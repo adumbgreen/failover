@@ -11,7 +11,7 @@ PING_TIMEOUT=3
 PRIMARY_IF=${PRIMARY_IF:-enp0s25}
 PRIMARY_GW=${PRIMARY_GW:-192.168.2.1}
 BACKUP_IF=${BACKUP_IF:-enx00a0c6000000}
-BACKUP_IP=${BACKUP_IF:-192.168.1.4}
+BACKUP_IP=${BACKUP_IP:-192.168.1.4}
 BACKUP_GW=${BACKUP_GW:-192.168.1.1}
 
 # Compare arg with current default gateway interface for route to healthcheck IP
@@ -26,12 +26,16 @@ else
   USING_PRIMARY_IF=0
 fi
 
-if grep -q $PRIMARY_IF "/etc/iproute2/rt_tables"; then
-  echo "13 $PRIMARY_IF" >> /etc/iproute2/rt_tables
+grep -q "$PRIMARY_IF" "/etc/iproute2/rt_tables"
+
+if [ $? -ne 0 ]; then
+  echo "12 $PRIMARY_IF" >> /etc/iproute2/rt_tables
   echo "Added $PRIMARY_IF entry to rt_tables".
 fi
 
-if grep -q $BACKUP_IF "/etc/iproute2/rt_tables"; then
+grep -q "$BACKUP_IF" "/etc/iproute2/rt_tables"
+
+if [ $? -ne 0 ]; then
   echo "13 $BACKUP_IF" >> /etc/iproute2/rt_tables
   echo "Added $BACKUP_IF entry to rt_tables."
 fi
