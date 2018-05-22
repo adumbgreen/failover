@@ -1,5 +1,5 @@
 failover.sh
-===
+=====
 
 This script will monitor two WAN devices for link. If link is lost on the primary interface, it will switch to the backup interface. When link returns to the primary interface, it will switch back to the primary interface.
 
@@ -8,7 +8,7 @@ This is accomplished by adding ```ip``` routes and changing them as necessary ba
 Install using ```sudo bash install.sh``` and configure at ```/etc/failover/failover.conf```.
 
 Configuring the hook script
-=====
+===
 The location for a script to be run by the daemon for each ping is specified
 in the configuration file. By default, the script lives at ```/etc/failover/failover.hook.sh```.
 
